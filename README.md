@@ -2,7 +2,10 @@
 
 Compare two eval runs and show what got worse.
 
-Takes two JSON files (same shape eval-triage already exports), matches samples by `id`, and reports score drops, suspicion rises, status flips, and new flags.
+Supports:
+- **eval-triage** JSON export (flat list of rows with `sample_id` + `score`)
+- **promptfoo**-style results (`results.results` with `score` + `success`)
+- Simple samples wrapper (legacy)
 
 ## Install
 
@@ -14,43 +17,40 @@ pip install -e .
 ## Usage
 
 ```bash
-eval-diff examples/run_a.json examples/run_b.json
+# eval-triage exports
+eval-diff examples/eval_triage_a.json examples/eval_triage_b.json
+
+# promptfoo or other
+eval-diff run_a.json run_b.json -m report.md --fail-on-regression
 ```
 
-Write a markdown report and fail the command if anything regressed:
-
-```bash
-eval-diff examples/run_a.json examples/run_b.json -m report.md --fail-on-regression
-```
-
-## Expected JSON shape
+## eval-triage shape
 
 ```json
-{
-  "run_id": "baseline",
-  "samples": [
-    {
-      "id": "s1",
-      "score": 0.92,
-      "monitor_suspicion": 0.11,
-      "status": "pass",
-      "flags": []
-    }
-  ]
-}
+[
+  {
+    "sample_id": "s1",
+    "score": 0.11,
+    "score_parsed": true,
+    "task": "control-task",
+    "snippet": "bash(ls)",
+    "reason": "low",
+    "below_threshold": false
+  }
+]
 ```
 
-Fields are optional. Missing fields are skipped.
+In eval-triage the `score` is the monitor suspicion score. A rise counts as a regression.
 
 ## Thresholds
 
-- `--score-drop` (default 0.1): score decrease that counts as a regression
-- `--suspicion-rise` (default 0.15): suspicion increase that counts as a regression
+- `--score-drop` (default 0.1): quality-score drop that counts as regression (promptfoo-style)
+- `--suspicion-rise` (default 0.15): suspicion rise that counts as regression (eval-triage)
 
 ## What counts as a regression
 
-- Score dropped more than the threshold
-- Monitor suspicion rose more than the threshold
+- Suspicion rose more than the threshold (eval-triage)
+- Quality score dropped more than the threshold (promptfoo)
 - Status flipped from pass → fail
 - New flags appeared
 

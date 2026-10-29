@@ -1,24 +1,79 @@
-"""Core comparison logic for Eval Diff."""
+"""Core comparison logic for Eval Diff.
+
+Supports:
+- eval-triage JSON export (list of rows with sample_id + score)
+- promptfoo-style results (results.results with score + success)
+- legacy samples wrapper
+"""
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 
 def load_run(path: str) -> dict[str, Any]:
-    import json
     with open(path) as f:
         data = json.load(f)
-    if "samples" not in data:
-        raise ValueError(f"{path} missing 'samples' key")
-    return data
+    return normalize(data)
+
+
+def normalize(data: Any) -> dict[str, Any]:
+    """Turn various eval outputs into a common {run_id, samples} shape."""
+    if isinstance(data, list):
+        # eval-triage style: flat list of rows
+        samples = []
+        for i, row in enumerate(data):
+            if not isinstance(row, dict):
+                continue
+            sid = str(row.get("sample_id") or row.get("id") or f"row-{i}")
+            samples.append({
+                "id": sid,
+                "score": row.get("score"),  # monitor suspicion in eval-triage
+                "monitor_suspicion": row.get("score"),
+                "status": "fail" if row.get("below_threshold") else ("pass" if row.get("score_parsed", True) else "unparsed"),
+                "flags": ["unparsed"] if not row.get("score_parsed", True) else [],
+                "raw": row,
+            })
+        return {"run_id": "eval-triage", "samples": samples}
+
+    if isinstance(data, dict):
+        # promptfoo-style
+        if "results" in data and isinstance(data["results"], dict) and "results" in data["results"]:
+            samples = []
+            for i, r in enumerate(data["results"]["results"]):
+                if not isinstance(r, dict):
+                    continue
+                sid = str(r.get("id") or r.get("testIdx", i))
+                score = r.get("score")
+                success = r.get("success", True)
+                samples.append({
+                    "id": sid,
+                    "score": score,
+                    "monitor_suspicion": None,
+                    "status": "pass" if success else "fail",
+                    "flags": [] if success else ["failed"],
+                    "raw": r,
+                })
+            return {"run_id": data.get("evalId", "promptfoo"), "samples": samples}
+
+        # legacy / simple samples wrapper
+        if "samples" in data:
+            return data
+
+    raise ValueError("Unrecognized eval JSON shape")
 
 
 def index_samples(run: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {s["id"]: s for s in run["samples"] if "id" in s}
 
 
-def compare(run_a: dict[str, Any], run_b: dict[str, Any], score_drop_threshold: float = 0.1, suspicion_rise_threshold: float = 0.15) -> dict[str, Any]:
+def compare(
+    run_a: dict[str, Any],
+    run_b: dict[str, Any],
+    score_drop_threshold: float = 0.1,
+    suspicion_rise_threshold: float = 0.15,
+) -> dict[str, Any]:
     a_idx = index_samples(run_a)
     b_idx = index_samples(run_b)
 
@@ -40,7 +95,6 @@ def compare(run_a: dict[str, Any], run_b: dict[str, Any], score_drop_threshold: 
             only_b.append(sid)
             continue
 
-        # both exist
         score_a = sa.get("score")
         score_b = sb.get("score")
         sus_a = sa.get("monitor_suspicion")
@@ -61,13 +115,14 @@ def compare(run_a: dict[str, Any], run_b: dict[str, Any], score_drop_threshold: 
         worse = False
         reasons = []
 
-        if delta_score is not None and delta_score < -score_drop_threshold:
-            worse = True
-            reasons.append(f"score dropped {delta_score:.3f}")
-
+        # For eval-triage the "score" is suspicion, so a rise is bad
         if delta_sus is not None and delta_sus > suspicion_rise_threshold:
             worse = True
             reasons.append(f"suspicion rose {delta_sus:.3f}")
+        elif delta_score is not None and delta_sus is None and delta_score < -score_drop_threshold:
+            # promptfoo-style quality score: drop is bad
+            worse = True
+            reasons.append(f"score dropped {delta_score:.3f}")
 
         if status_a == "pass" and status_b == "fail":
             worse = True
