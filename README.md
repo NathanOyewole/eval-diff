@@ -17,12 +17,22 @@ pip install -e .
 ## Usage
 
 ```bash
-# eval-triage exports
+# auto-detect (default)
 eval-diff examples/eval_triage_a.json examples/eval_triage_b.json
 
-# promptfoo or other
-eval-diff run_a.json run_b.json -m report.md --fail-on-regression
+# force format
+eval-diff run_a.json run_b.json --format promptfoo
+
+# markdown + fail CI
+eval-diff examples/eval_triage_a.json examples/eval_triage_b.json -m report.md --fail-on-regression
 ```
+
+## Matching
+
+1. Primary: `sample_id` (or `id`)
+2. Fallback: stable hash of `task` + first 80 chars of `snippet`/`reason` when ID is missing
+
+Use `--format auto|eval-triage|promptfoo|legacy` to skip guessing.
 
 ## eval-triage shape
 

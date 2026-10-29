@@ -8,28 +8,50 @@ Supports:
 
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
 
-def load_run(path: str) -> dict[str, Any]:
+def load_run(path: str, fmt: str = "auto") -> dict[str, Any]:
     with open(path) as f:
         data = json.load(f)
-    return normalize(data)
+    return normalize(data, fmt=fmt)
 
 
-def normalize(data: Any) -> dict[str, Any]:
+def _stable_key(row: dict[str, Any]) -> str:
+    """Fallback key when sample_id is missing or unstable."""
+    task = str(row.get("task") or "")
+    snippet = str(row.get("snippet") or row.get("reason") or "")[:80]
+    raw = f"{task}|{snippet}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:12]
+
+
+def normalize(data: Any, fmt: str = "auto") -> dict[str, Any]:
     """Turn various eval outputs into a common {run_id, samples} shape."""
-    if isinstance(data, list):
-        # eval-triage style: flat list of rows
+    if fmt == "auto":
+        if isinstance(data, list):
+            fmt = "eval-triage"
+        elif isinstance(data, dict) and "results" in data and isinstance(data.get("results"), dict):
+            fmt = "promptfoo"
+        elif isinstance(data, dict) and "samples" in data:
+            fmt = "legacy"
+        else:
+            raise ValueError("Could not auto-detect format")
+
+    if fmt == "eval-triage":
+        if not isinstance(data, list):
+            raise ValueError("eval-triage format expects a list of rows")
         samples = []
         for i, row in enumerate(data):
             if not isinstance(row, dict):
                 continue
-            sid = str(row.get("sample_id") or row.get("id") or f"row-{i}")
+            sid = str(row.get("sample_id") or row.get("id") or "")
+            if not sid or sid == "None":
+                sid = _stable_key(row)
             samples.append({
                 "id": sid,
-                "score": row.get("score"),  # monitor suspicion in eval-triage
+                "score": row.get("score"),
                 "monitor_suspicion": row.get("score"),
                 "status": "fail" if row.get("below_threshold") else ("pass" if row.get("score_parsed", True) else "unparsed"),
                 "flags": ["unparsed"] if not row.get("score_parsed", True) else [],
@@ -37,31 +59,30 @@ def normalize(data: Any) -> dict[str, Any]:
             })
         return {"run_id": "eval-triage", "samples": samples}
 
-    if isinstance(data, dict):
-        # promptfoo-style
-        if "results" in data and isinstance(data["results"], dict) and "results" in data["results"]:
-            samples = []
-            for i, r in enumerate(data["results"]["results"]):
-                if not isinstance(r, dict):
-                    continue
-                sid = str(r.get("id") or r.get("testIdx", i))
-                score = r.get("score")
-                success = r.get("success", True)
-                samples.append({
-                    "id": sid,
-                    "score": score,
-                    "monitor_suspicion": None,
-                    "status": "pass" if success else "fail",
-                    "flags": [] if success else ["failed"],
-                    "raw": r,
-                })
-            return {"run_id": data.get("evalId", "promptfoo"), "samples": samples}
+    if fmt == "promptfoo":
+        if not (isinstance(data, dict) and isinstance(data.get("results"), dict) and "results" in data["results"]):
+            raise ValueError("promptfoo format expects results.results")
+        samples = []
+        for i, r in enumerate(data["results"]["results"]):
+            if not isinstance(r, dict):
+                continue
+            sid = str(r.get("id") or r.get("testIdx", i))
+            score = r.get("score")
+            success = r.get("success", True)
+            samples.append({
+                "id": sid,
+                "score": score,
+                "monitor_suspicion": None,
+                "status": "pass" if success else "fail",
+                "flags": [] if success else ["failed"],
+                "raw": r,
+            })
+        return {"run_id": data.get("evalId", "promptfoo"), "samples": samples}
 
-        # legacy / simple samples wrapper
-        if "samples" in data:
-            return data
+    if fmt == "legacy" or (isinstance(data, dict) and "samples" in data):
+        return data
 
-    raise ValueError("Unrecognized eval JSON shape")
+    raise ValueError(f"Unrecognized format: {fmt}")
 
 
 def index_samples(run: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -115,12 +136,10 @@ def compare(
         worse = False
         reasons = []
 
-        # For eval-triage the "score" is suspicion, so a rise is bad
         if delta_sus is not None and delta_sus > suspicion_rise_threshold:
             worse = True
             reasons.append(f"suspicion rose {delta_sus:.3f}")
         elif delta_score is not None and delta_sus is None and delta_score < -score_drop_threshold:
-            # promptfoo-style quality score: drop is bad
             worse = True
             reasons.append(f"score dropped {delta_score:.3f}")
 
