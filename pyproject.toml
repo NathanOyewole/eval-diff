@@ -1,0 +1,19 @@
+[project]
+name = "eval-diff"
+version = "0.1.0"
+description = "Compare two eval runs and report regressions"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+]
+
+[project.scripts]
+eval-diff = "eval_diff.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
