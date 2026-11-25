@@ -18,6 +18,8 @@ python3 -m http.server 8000
 
 Deploy: GitHub Pages publishes `docs/` on every push to `main`. Design tokens are documented in [`DESIGN.md`](DESIGN.md).
 
+The favicon source is [`docs/favicon.svg`](docs/favicon.svg), with `favicon.ico` and `apple-touch-icon.png` generated from the same geometry.
+
 Supports:
 - **eval-triage** JSON export (flat list of rows with `sample_id` + `score`)
 - **promptfoo**-style results (`results.results` with `score` + `success`)

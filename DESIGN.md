@@ -58,6 +58,13 @@
 - Keyboard: full navigation; buttons and textareas labelled
 - Screen reader: semantic sections, table headers, status region
 
+## App Icon
+
+- Source of truth: `docs/favicon.svg` — 64×64 rounded square, `rx=14`, fill `#0b0e14`, 3px `#263041` border.
+- Mark: two 4px opposing chevrons in `#5eead4`, with inner tips at x=22 and x=42. The 20-unit gap keeps the mark legible at 16px.
+- Fallbacks: `favicon.ico` (16–256px) and `apple-touch-icon.png` (180px), generated from the same geometry.
+- No gradients, shadows or glows.
+
 ## Anti-Patterns to Avoid
 - Generic AI SaaS dashboard
 - Gradients and glow

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Eval Diff</title>
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#0b0e14"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#263041" stroke-width="3"/>
+  <path d="M11 20 L22 32 L11 44" fill="none" stroke="#5eead4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M53 20 L42 32 L53 44" fill="none" stroke="#5eead4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
