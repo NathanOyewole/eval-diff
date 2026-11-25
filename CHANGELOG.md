@@ -4,6 +4,7 @@
 
 - Added `docs/.well-known/ory-verify.txt` with the Ory verification token for the Eval Diff site.
 - Added `docs/.nojekyll` so GitHub Pages serves the `.well-known` directory.
+- Added `<meta name="ory-verify">` to `docs/index.html` as a fallback verification method.
 - `README.md` documents the verification path.
 
 ## Website and Pages deployment, 25 November 2026
