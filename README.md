@@ -2,7 +2,7 @@
 
 Compare two eval runs and show what got worse.
 
-**Website:** https://nathanoyewole.me/eval-diff/ — landing page with an in-browser diff playground. Runs entirely client-side; no data is uploaded.
+**Website:** https://nathanoyewole.github.io/eval-diff/ — landing page with an in-browser diff playground. Runs entirely client-side; no data is uploaded.
 
 ## Website
 
