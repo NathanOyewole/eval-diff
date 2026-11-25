@@ -6,17 +6,17 @@ Compare two eval runs and show what got worse.
 
 ## Website
 
-The site lives in [`web/`](web/) as dependency-free HTML/CSS/JS. It ports the CLI comparison logic so visitors can paste two runs or load a bundled example and see regressions without installing anything.
+The site lives in [`docs/`](docs/) as dependency-free HTML/CSS/JS. It ports the CLI comparison logic so visitors can paste two runs or load a bundled example and see regressions without installing anything.
 
 Preview locally:
 
 ```bash
-cd web
+cd docs
 python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-Deploy: `.github/workflows/pages.yml` publishes `web/` to GitHub Pages on every push to `main`. Design tokens are documented in [`DESIGN.md`](DESIGN.md).
+Deploy: GitHub Pages publishes `docs/` on every push to `main`. Design tokens are documented in [`DESIGN.md`](DESIGN.md).
 
 Supports:
 - **eval-triage** JSON export (flat list of rows with `sample_id` + `score`)
