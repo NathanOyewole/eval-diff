@@ -20,6 +20,8 @@ Deploy: GitHub Pages publishes `docs/` on every push to `main`. Design tokens ar
 
 The favicon source is [`docs/favicon.svg`](docs/favicon.svg), with `favicon.ico` and `apple-touch-icon.png` generated from the same geometry.
 
+Domain verification lives at `docs/.well-known/ory-verify.txt` and is served from `https://nathanoyewole.github.io/eval-diff/.well-known/ory-verify.txt`. `docs/.nojekyll` keeps the dot-directory visible on GitHub Pages.
+
 Supports:
 - **eval-triage** JSON export (flat list of rows with `sample_id` + `score`)
 - **promptfoo**-style results (`results.results` with `score` + `success`)

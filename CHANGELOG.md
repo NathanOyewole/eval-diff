@@ -1,5 +1,11 @@
 # Eval Diff — Changelog
 
+## Ory domain verification, 25 November 2026
+
+- Added `docs/.well-known/ory-verify.txt` with the Ory verification token for the Eval Diff site.
+- Added `docs/.nojekyll` so GitHub Pages serves the `.well-known` directory.
+- `README.md` documents the verification path.
+
 ## Website and Pages deployment, 25 November 2026
 
 Added a public website for Eval Diff.
