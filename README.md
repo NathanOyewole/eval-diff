@@ -2,6 +2,22 @@
 
 Compare two eval runs and show what got worse.
 
+**Website:** https://nathanoyewole.me/eval-diff/ — landing page with an in-browser diff playground. Runs entirely client-side; no data is uploaded.
+
+## Website
+
+The site lives in [`web/`](web/) as dependency-free HTML/CSS/JS. It ports the CLI comparison logic so visitors can paste two runs or load a bundled example and see regressions without installing anything.
+
+Preview locally:
+
+```bash
+cd web
+python3 -m http.server 8000
+# open http://localhost:8000
+```
+
+Deploy: `.github/workflows/pages.yml` publishes `web/` to GitHub Pages on every push to `main`. Design tokens are documented in [`DESIGN.md`](DESIGN.md).
+
 Supports:
 - **eval-triage** JSON export (flat list of rows with `sample_id` + `score`)
 - **promptfoo**-style results (`results.results` with `score` + `success`)

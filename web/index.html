@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eval Diff — know what got worse</title>
+<meta name="description" content="Compare two LLM eval runs, flag regressions, and fail CI when quality drops.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="#top" aria-label="Eval Diff home">
+      <span class="brand-mark" aria-hidden="true">&gt;&lt;</span>
+      <span>eval<span class="brand-dim">/</span>diff</span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#why">Why</a>
+      <a href="#playground">Try it</a>
+      <a href="#formats">Formats</a>
+      <a href="#ci">CI</a>
+      <a class="nav-gh" href="https://github.com/NathanOyewole/eval-diff" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">CI for LLM evals</p>
+        <h1>Your eval got worse.<br><span class="accent">Know before you ship.</span></h1>
+        <p class="lede">Eval Diff compares two eval runs, flags regressions, and fails CI when quality drops. No dashboard to configure. One command, one answer.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#playground">Try it in the browser</a>
+          <a class="btn secondary" href="https://github.com/NathanOyewole/eval-diff" target="_blank" rel="noopener noreferrer">Read the code ↗</a>
+        </div>
+        <div class="install">
+          <code id="install-cmd">pip install eval-diff</code>
+          <button class="copy-btn" data-copy="install-cmd" aria-label="Copy install command">Copy</button>
+        </div>
+      </div>
+      <div class="terminal" aria-label="Example terminal output">
+        <div class="terminal-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="terminal-title">eval-diff baseline.json candidate.json</span></div>
+<pre>Matched: 3  Regressions: 2  Only A: 0  Only B: 0
+
+Regressions:
+  s2: suspicion rose 0.230
+  s3: new flags: unparsed
+
+<span class="term-muted"># exit 1 when --fail-on-regression is set</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="why">
+    <div class="wrap">
+      <p class="eyebrow">What it catches</p>
+      <h2>Four ways an eval can regress.</h2>
+      <p class="section-lede">A regression is not just a lower average. These are the cases Eval Diff reports.</p>
+      <div class="cards">
+        <article class="card">
+          <span class="card-num">01</span>
+          <h3>Suspicion rose</h3>
+          <p>On eval-triage rows, a monitor suspicion score rising past the threshold counts as worse.</p>
+          <code>default +0.15</code>
+        </article>
+        <article class="card">
+          <span class="card-num">02</span>
+          <h3>Score dropped</h3>
+          <p>On quality-style runs, a score falling past the threshold is a regression.</p>
+          <code>default −0.10</code>
+        </article>
+        <article class="card">
+          <span class="card-num">03</span>
+          <h3>Status flipped</h3>
+          <p>A sample that passed in the baseline and fails in the candidate is always worse.</p>
+          <code>pass → fail</code>
+        </article>
+        <article class="card">
+          <span class="card-num">04</span>
+          <h3>New flags</h3>
+          <p>Any flag present in the candidate that was not in the baseline is reported.</p>
+          <code>unparsed, failed</code>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="playground">
+    <div class="wrap">
+      <p class="eyebrow">Interactive</p>
+      <h2>Run a diff without installing anything.</h2>
+      <p class="section-lede">Paste two eval runs, or load an example. Everything runs in your browser — your data is never uploaded.</p>
+
+      <div class="playground">
+        <div class="controls">
+          <label for="example">Example dataset</label>
+          <select id="example">
+            <option value="triage">eval-triage — monitor suspicion</option>
+            <option value="legacy">legacy samples — status + flags</option>
+            <option value="noid">no IDs — stable hash matching</option>
+          </select>
+          <div class="thresholds">
+            <label for="score-drop">Score drop</label>
+            <input id="score-drop" type="number" step="0.01" min="0" value="0.1">
+            <label for="suspicion-rise">Suspicion rise</label>
+            <input id="suspicion-rise" type="number" step="0.01" min="0" value="0.15">
+          </div>
+          <button class="btn primary run" id="run">Compare runs</button>
+        </div>
+
+        <div class="editors">
+          <div class="editor">
+            <div class="editor-head"><span>Baseline (A)</span><span class="editor-hint">before</span></div>
+            <textarea id="run-a" spellcheck="false" aria-label="Baseline eval run JSON"></textarea>
+          </div>
+          <div class="editor">
+            <div class="editor-head"><span>Candidate (B)</span><span class="editor-hint">after</span></div>
+            <textarea id="run-b" spellcheck="false" aria-label="Candidate eval run JSON"></textarea>
+          </div>
+        </div>
+
+        <div class="result" id="result" role="status" aria-live="polite">
+          <p class="result-placeholder">Load an example or paste two runs, then press Compare runs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="formats">
+    <div class="wrap">
+      <p class="eyebrow">Supported inputs</p>
+      <h2>Three formats, one comparison.</h2>
+      <div class="cards three">
+        <article class="card">
+          <h3>eval-triage</h3>
+          <p>Flat list of rows with <code>sample_id</code> and <code>score</code>. Suspicion rises are regressions.</p>
+        </article>
+        <article class="card">
+          <h3>promptfoo</h3>
+          <p><code>results.results</code> with <code>score</code> and <code>success</code>. Score drops and pass→fail flips are regressions.</p>
+        </article>
+        <article class="card">
+          <h3>legacy</h3>
+          <p>Object with <code>samples</code> carrying score, suspicion, status and flags.</p>
+        </article>
+      </div>
+      <p class="fineprint">Auto-detection is on by default. Force a format with <code>--format</code>.</p>
+    </div>
+  </section>
+
+  <section class="section" id="ci">
+    <div class="wrap split">
+      <div>
+        <p class="eyebrow">In your pipeline</p>
+        <h2>Fail the build when quality drops.</h2>
+        <p class="section-lede">One flag turns Eval Diff into a CI gate. Write a markdown report at the same time if you want it in the PR.</p>
+      </div>
+      <div class="code-wrap">
+        <div class="editor-head"><span>terminal</span><button class="copy-btn" data-copy="ci-cmd">Copy</button></div>
+<pre id="ci-cmd">eval-diff baseline.json candidate.json \
+  -m report.md \
+  --fail-on-regression</pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <span>eval/diff — open source, MIT</span>
+    <a href="https://github.com/NathanOyewole/eval-diff" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+  </div>
+</footer>
+
+<script src="examples.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
